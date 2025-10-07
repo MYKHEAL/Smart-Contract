@@ -71,6 +71,12 @@ module bank_c24::bank_c24{
         user_account.balance = user_account.balance + amount;
     }
 
+    public fun withdraw(bank: &mut Bank, user_address: address, amount: u64){
+        let user_account =  table::borrow_mut<address, Account>(&mut bank.accounts, user_address);
+        assert!(user_account.balance >= amount, EBalanceNotCorrect);
+        user_account.balance = user_account.balance - amount;
+    }
+
 
     
     #[test]
@@ -88,7 +94,7 @@ module bank_c24::bank_c24{
 
 
         add_account_to_bank(user_address, ericalli_account,&mut zenith_bank);
-        dummy_drop(zenith_bank, @bank_address);
+        dummy_drop(zenith_bank, @zenith_address);
 
     }
 
@@ -121,7 +127,40 @@ module bank_c24::bank_c24{
 
         assert!(user_account.balance == 1000, EBalanceNotCorrect);
 
-        dummy_drop(zenith_bank, @bank_address);
+        dummy_drop(zenith_bank, @zenith_address);
 
+    }
+
+    #[test]
+    public fun test_withdrawal(){
+        let mut ctx = dummy();
+
+        let mut zenith_bank = create_bank(b"Zenith".to_string(), &mut ctx);
+        assert!(zenith_bank.name == b"Zenith".to_string(), EBankNotFound);
+
+        let mykheal_account = create_account(b"Mykheal".to_string(), b"1234".to_string(), &mut ctx);
+        assert!(mykheal_account.name == b"Mykheal".to_string(), EAccountNotAdded);
+
+        let user_address = @mykheal_address;
+
+        add_account_to_bank(user_address, mykheal_account,&mut zenith_bank);
+        assert!(zenith_bank.accounts.contains(user_address), EAccountNotFound);
+
+        // let user_account =  table::borrow_mut<address, Account>(&mut zenith_bank.accounts, user_address);
+        // assert!(zenith_bank_account.balance == 0, EBalanceNotCorrect);
+        deposit(&mut zenith_bank, user_address, 2000);
+        // assert!(mykheal_account.balance == 2000, EBalanceNotCorrect);
+
+         let user_account =  table::borrow_mut<address, Account>(&mut zenith_bank.accounts, user_address);
+        assert!(user_account.balance == 2000, EBalanceNotCorrect);
+        withdraw(&mut zenith_bank, user_address, 500);
+
+            
+
+
+        let user_account =  table::borrow_mut<address, Account>(&mut zenith_bank.accounts, user_address);
+        assert!(user_account.balance == 1500, EBalanceNotCorrect);
+        dummy_drop(zenith_bank, @zenith_address);
+     
     }
 }
